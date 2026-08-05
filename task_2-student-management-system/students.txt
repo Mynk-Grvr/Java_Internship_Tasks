@@ -1,0 +1,3 @@
+101,John Doe,20
+102,Jane Smith,22
+103,Bob Johnson,21
