@@ -44,7 +44,7 @@ Manages application execution flow:
 
 1. **Navigate to the Project Directory**:
    ```powershell
-   cd C:\Users\Mynk_Grvr\.gemini\antigravity\scratch\employee-management-system
+   cd task_1-employee-management-system   
    ```
 
 2. **Compile the Java Files**:

@@ -66,7 +66,7 @@ A production-style console application in Core Java that implements **file-based
 
 1. **Navigate to the Project Directory**:
    ```powershell
-   cd C:\Users\Mynk_Grvr\.gemini\antigravity\scratch\student-management-system
+   cd task_2-student-management-system
    ```
 
 2. **Compile Java Source Files**:
