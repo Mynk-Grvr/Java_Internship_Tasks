@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task 5 - Contact Management System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header & Auth Panel -->
+        <header>
+            <div>
+                <h1>📞 Contact Management System</h1>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">Enterprise Inquiry & Support Ticket Dashboard</p>
+            </div>
+            <div class="auth-box">
+                <input type="text" id="authUsername" value="admin" placeholder="Admin Username">
+                <input type="password" id="authPassword" value="admin123" placeholder="Password">
+                <button class="btn btn-primary" onclick="loadContacts()">Authenticate</button>
+            </div>
+        </header>
+
+        <!-- Control Toolbar (Search, Filter, New Contact Button) -->
+        <div class="toolbar">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Search contacts by Name or Email..." onkeyup="debounceSearch()">
+            </div>
+            <div>
+                <select id="sortSelect" onchange="loadContacts()" style="padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 0.875rem;">
+                    <option value="createdAt,desc">Sort: Newest First</option>
+                    <option value="createdAt,asc">Sort: Oldest First</option>
+                    <option value="name,asc">Sort: Name (A-Z)</option>
+                    <option value="name,desc">Sort: Name (Z-A)</option>
+                </select>
+                <button class="btn btn-primary" style="margin-left: 8px;" onclick="openCreateModal()">+ Create New Entry</button>
+            </div>
+        </div>
+
+        <!-- Contacts Table View -->
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Message</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="contactsTableBody">
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--text-secondary);">Loading contacts...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination">
+            <div id="paginationInfo" style="font-size: 0.875rem; color: var(--text-secondary);">
+                Page 1 of 1 (0 total entries)
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="btn btn-secondary" id="prevBtn" onclick="changePage(-1)" disabled>← Previous</button>
+                <button class="btn btn-secondary" id="nextBtn" onclick="changePage(1)" disabled>Next →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create / Edit Contact Modal -->
+    <div class="modal-overlay" id="contactModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Create New Contact</h2>
+                <button onclick="closeModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer;">✕</button>
+            </div>
+            <form id="contactForm" onsubmit="handleFormSubmit(event)">
+                <input type="hidden" id="contactId">
+                <div class="form-group">
+                    <label for="contactName">Full Name *</label>
+                    <input type="text" id="contactName" required>
+                    <span class="error-text" id="err-name"></span>
+                </div>
+                <div class="form-group">
+                    <label for="contactEmail">Email Address *</label>
+                    <input type="email" id="contactEmail" required>
+                    <span class="error-text" id="err-email"></span>
+                </div>
+                <div class="form-group">
+                    <label for="contactMessage">Message / Support Ticket Details *</label>
+                    <textarea id="contactMessage" rows="4" required></textarea>
+                    <span class="error-text" id="err-message"></span>
+                </div>
+                <div class="form-group">
+                    <label for="contactStatus">Status</label>
+                    <select id="contactStatus">
+                        <option value="PENDING">PENDING</option>
+                        <option value="RESOLVED">RESOLVED</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="saveBtn">Save Entry</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Confirm Deletion</h2>
+                <button onclick="closeDeleteModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer;">✕</button>
+            </div>
+            <p style="margin-bottom: 20px;">Are you sure you want to delete this contact record? This action cannot be undone.</p>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
