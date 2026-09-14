@@ -1,9 +1,9 @@
 package com.example.contact.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -18,6 +18,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 /**
  * Task 5: Spring Security Configuration with Role-Based Access Control (RBAC).
+ * Suppresses native browser HTTP Basic pop-up dialog on 401 Unauthorized.
  */
 @Configuration
 @EnableWebSecurity
@@ -37,8 +38,13 @@ public class SecurityConfig {
                 .requestMatchers("/contacts/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
-            .httpBasic(Customizer.withDefaults())
-            .formLogin(form -> form.permitAll());
+            // Custom EntryPoint: Return 401 WITHOUT WWW-Authenticate header to prevent native browser pop-up loop
+            .exceptionHandling(ex -> ex.authenticationEntryPoint((request, response, authException) -> {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+            }))
+            .httpBasic(basic -> basic.authenticationEntryPoint((request, response, authException) -> {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+            }));
 
         return http.build();
     }
