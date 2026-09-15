@@ -21,10 +21,12 @@ import java.util.Optional;
 public class ContactService {
 
     private final ContactRepository contactRepository;
+    private final EmailService emailService;
 
     @Autowired
-    public ContactService(ContactRepository contactRepository) {
+    public ContactService(ContactRepository contactRepository, EmailService emailService) {
         this.contactRepository = contactRepository;
+        this.emailService = emailService;
     }
 
     /**
@@ -36,7 +38,12 @@ public class ContactService {
         contact.setEmail(request.getEmail());
         contact.setMessage(request.getMessage());
         contact.setStatus(request.getStatus() != null ? request.getStatus() : "PENDING");
-        return contactRepository.save(contact);
+        Contact saved = contactRepository.save(contact);
+        
+        // Send async/simulated auto-reply notification
+        emailService.sendAutoReply(saved.getEmail(), saved.getName());
+        
+        return saved;
     }
 
     /**
@@ -108,5 +115,39 @@ public class ContactService {
             return true;
         }
         return false;
+    }
+
+    public void exportToCsv(java.io.PrintWriter writer) {
+        writer.println("ID,Name,Email,Message,Status,CreatedAt");
+        java.util.List<Contact> contacts = contactRepository.findAll();
+        for (Contact c : contacts) {
+            String msg = c.getMessage() != null ? c.getMessage().replace("\"", "\"\"").replace("\n", " ") : "";
+            String name = c.getName() != null ? c.getName().replace("\"", "\"\"") : "";
+            writer.printf("%d,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
+                    c.getId(), name, c.getEmail(), msg, c.getStatus(), c.getCreatedAt());
+        }
+    }
+
+    public void importFromCsv(org.springframework.web.multipart.MultipartFile file) throws Exception {
+        try (java.io.BufferedReader br = new java.io.BufferedReader(new java.io.InputStreamReader(file.getInputStream()))) {
+            String line;
+            boolean firstLine = true;
+            while ((line = br.readLine()) != null) {
+                if (firstLine) { firstLine = false; continue; } // skip header
+                String[] values = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+                if (values.length >= 4) {
+                    Contact c = new Contact();
+                    String name = values.length > 1 ? values[1].replaceAll("^\"|\"$", "") : "";
+                    String email = values.length > 2 ? values[2].replaceAll("^\"|\"$", "") : "";
+                    String message = values.length > 3 ? values[3].replaceAll("^\"|\"$", "") : "";
+                    String status = values.length > 4 ? values[4].replaceAll("^\"|\"$", "") : "PENDING";
+                    c.setName(name);
+                    c.setEmail(email);
+                    c.setMessage(message);
+                    c.setStatus(status);
+                    contactRepository.save(c);
+                }
+            }
+        }
     }
 }

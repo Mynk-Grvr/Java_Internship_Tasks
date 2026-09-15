@@ -518,3 +518,59 @@ async function loadStats() {
         console.error('Error loading statistics:', err);
     }
 }
+// --- CSV Export / Import ---
+
+async function handleExportCSV() {
+    try {
+        const response = await fetch('/contacts/export', {
+            method: 'GET',
+            headers: getAuthHeader()
+        });
+        if (!response.ok) {
+            alert('Failed to export CSV');
+            return;
+        }
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'contacts.csv';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    } catch (err) {
+        console.error('Export error', err);
+        alert('An error occurred during export.');
+    }
+}
+
+async function handleImportCSV(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch('/contacts/import', {
+            method: 'POST',
+            headers: getAuthHeader(),
+            body: formData
+        });
+
+        if (response.ok) {
+            alert('CSV imported successfully!');
+            loadContacts();
+            loadStats();
+        } else {
+            const errorText = await response.text();
+            alert('Import failed: ' + errorText);
+        }
+    } catch (err) {
+        console.error('Import error', err);
+        alert('An error occurred during import.');
+    } finally {
+        event.target.value = ''; // Reset file input
+    }
+}

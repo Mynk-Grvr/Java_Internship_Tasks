@@ -92,4 +92,27 @@ public class ContactController {
         }
         return ResponseEntity.notFound().build();
     }
+
+    /**
+     * GET /contacts/export : Export all contacts to CSV
+     */
+    @GetMapping("/export")
+    public void exportCsv(jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"contacts.csv\"");
+        contactService.exportToCsv(response.getWriter());
+    }
+
+    /**
+     * POST /contacts/import : Import contacts from CSV
+     */
+    @PostMapping("/import")
+    public ResponseEntity<String> importCsv(@RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            contactService.importFromCsv(file);
+            return ResponseEntity.ok("CSV imported successfully!");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to import CSV: " + e.getMessage());
+        }
+    }
 }

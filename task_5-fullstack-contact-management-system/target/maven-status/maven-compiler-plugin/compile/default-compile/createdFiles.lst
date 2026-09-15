@@ -6,3 +6,4 @@ com\example\contact\repository\ContactRepository.class
 com\example\contact\service\ContactService.class
 com\example\contact\model\Contact.class
 com\example\contact\config\SecurityConfig.class
+com\example\contact\service\EmailService.class

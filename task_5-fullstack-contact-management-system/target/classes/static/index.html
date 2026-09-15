@@ -129,6 +129,9 @@
                 <option value="25">25</option>
                 <option value="50">50</option>
             </select>
+            <input type="file" id="csvFileInput" accept=".csv" style="display: none;" onchange="handleImportCSV(event)">
+            <button class="btn btn-secondary" style="margin-left: 8px;" onclick="document.getElementById('csvFileInput').click()">Import CSV</button>
+            <button class="btn btn-secondary" style="margin-left: 8px;" onclick="handleExportCSV()">Export CSV</button>
             <button class="btn btn-primary" style="margin-left: 8px;" onclick="openCreateModal()">+ Create New Entry</button>
         </div>
     </div>

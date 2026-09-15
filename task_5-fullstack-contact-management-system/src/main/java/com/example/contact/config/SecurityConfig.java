@@ -30,8 +30,9 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable)) // Allow H2 console
             .authorizeHttpRequests(auth -> auth
-                // Allow static resources and frontend UI without login
-                .requestMatchers("/", "/index.html", "/styles.css", "/app.js", "/h2-console/**", "/favicon.ico").permitAll()
+                // Allow static resources, frontend UI, and Swagger docs without login
+                .requestMatchers("/", "/index.html", "/styles.css", "/app.js", "/h2-console/**", "/favicon.ico",
+                        "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                 // Allow public to submit contact messages
                 .requestMatchers(HttpMethod.POST, "/contacts").permitAll()
                 // Protect contact management endpoints for ADMIN role
