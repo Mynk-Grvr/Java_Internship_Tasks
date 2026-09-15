@@ -255,10 +255,20 @@ tr:hover {
 
 .form-group input, .form-group textarea, .form-group select {
     width: 100%;
+    max-width: 100%;          /* never wider than the panel holding it */
     padding: 10px;
     border: 1px solid var(--border-color);
     border-radius: 6px;
     font-size: 0.875rem;
+    font-family: inherit;     /* textarea would otherwise default to monospace */
+}
+
+/* A textarea is resizable in both directions by default, which lets the
+   user drag it outside its container. Height remains adjustable because
+   that is useful for a long message; width does not. */
+.form-group textarea {
+    resize: none;
+    min-height: 110px;
 }
 
 .error-text {
@@ -273,4 +283,113 @@ tr:hover {
     justify-content: flex-end;
     gap: 12px;
     margin-top: 20px;
+}
+
+
+/* ==============================================================
+   TOOLBAR CONTROLS, HEADER STATISTICS AND RESPONSIVE RULES
+   ============================================================== */
+
+.toolbar-select {
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    font-size: 0.875rem;
+    background: #ffffff;
+    color: var(--text-primary);
+}
+
+.control-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-left: 10px;
+    margin-right: 4px;
+}
+
+.stat-chip {
+    display: inline-block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: #e2e8f0;
+    padding: 6px 12px;
+    border-radius: 20px;
+    margin-right: 8px;
+    white-space: nowrap;
+}
+
+.stat-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+/* Once the queue is clear the counter stops shouting. */
+.stat-pending.stat-zero {
+    background: #dcfce7;
+    color: #166534;
+}
+
+/* A seven column table cannot shrink indefinitely. Rather than let it
+   break the page layout, it scrolls inside its own card. */
+.table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-scroll table {
+    min-width: 760px;
+}
+
+@media (max-width: 900px) {
+    .container {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .search-box input {
+        width: 100%;
+    }
+
+    .pagination {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 640px) {
+    /* Drop the identifier and date columns; both are recoverable by
+       opening the record, and neither is needed to triage the queue. */
+    .table-scroll table th:nth-child(1),
+    .table-scroll table td:nth-child(1),
+    .table-scroll table th:nth-child(6),
+    .table-scroll table td:nth-child(6) {
+        display: none;
+    }
+
+    .table-scroll table {
+        min-width: 520px;
+    }
+
+    .modal {
+        max-width: 94vw;
+    }
+
+    .stat-chip {
+        font-size: 0.78rem;
+        padding: 5px 10px;
+    }
 }

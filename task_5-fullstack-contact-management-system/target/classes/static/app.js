@@ -1,7 +1,7 @@
 // Task 5: Contact Management System Application Logic with Interactive Login & Session Storage
 
 let currentPage = 0;
-const pageSize = 5;
+let pageSize = 10;          // kept in step with #sizeSelect
 let totalPages = 1;
 let deleteTargetId = null;
 let searchDebounceTimer = null;
@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
         activePassword = savedPass;
         verifyAndShowDashboard();
     } else {
-        showLoginOverlay();
+        showPublicPage();
     }
 });
 
@@ -83,6 +83,7 @@ async function handleLoginSubmit(e) {
         sessionStorage.setItem('admin_user', user);
         sessionStorage.setItem('admin_pass', pass);
         hideLoginOverlay();
+        hidePublicPage();
         if (document.getElementById('dashboardContainer')) document.getElementById('dashboardContainer').style.display = 'block';
         if (document.getElementById('loggedInUserDisplay')) document.getElementById('loggedInUserDisplay').innerText = user;
     } else {
@@ -98,6 +99,7 @@ async function verifyAndShowDashboard() {
     const success = await loadContacts(false);
     if (success) {
         hideLoginOverlay();
+        hidePublicPage();
         if (document.getElementById('dashboardContainer')) document.getElementById('dashboardContainer').style.display = 'block';
         if (document.getElementById('loggedInUserDisplay')) document.getElementById('loggedInUserDisplay').innerText = activeUsername;
     } else {
@@ -114,15 +116,18 @@ function handleLogout() {
     const pInput = document.getElementById('loginPassword');
     if (uInput) uInput.value = "";
     if (pInput) pInput.value = "";
-    showLoginOverlay();
+    showPublicPage();
 }
 
 async function loadContacts(showAlertOnSuccess = false) {
     const searchInput = document.getElementById('searchInput');
     const sortSelect = document.getElementById('sortSelect');
-    
+
+    const sizeSelect = document.getElementById('sizeSelect');
+
     const search = searchInput ? searchInput.value.trim() : "";
     const sort = sortSelect ? sortSelect.value : "createdAt,desc";
+    if (sizeSelect) pageSize = parseInt(sizeSelect.value, 10) || pageSize;
 
     const url = new URL('/contacts', window.location.origin);
     url.searchParams.append('page', currentPage);
@@ -152,6 +157,7 @@ async function loadContacts(showAlertOnSuccess = false) {
         currentContacts = data.content || [];
         renderTable(currentContacts);
         renderPagination(data);
+        loadStats();
 
         if (showAlertOnSuccess) {
             alert('✅ Authenticated successfully as ADMIN!');
@@ -369,4 +375,146 @@ function formatDate(isoStr) {
     if (!isoStr) return '';
     const date = new Date(isoStr);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+
+/* ==============================================================
+   PUBLIC ENQUIRY PAGE
+   Handles the unauthenticated visitor journey. Everything here
+   calls POST /contacts WITHOUT an Authorization header, relying on
+   the anonymous permit rule declared in SecurityConfig.
+   ============================================================== */
+
+function showPublicPage() {
+    const pub = document.getElementById('publicContainer');
+    const dash = document.getElementById('dashboardContainer');
+    if (pub) pub.style.display = 'block';
+    if (dash) dash.style.display = 'none';
+}
+
+function hidePublicPage() {
+    const pub = document.getElementById('publicContainer');
+    if (pub) pub.style.display = 'none';
+}
+
+function clearPublicErrors() {
+    ['perr-name', 'perr-email', 'perr-message'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = '';
+    });
+    const ok = document.getElementById('publicSuccess');
+    if (ok) ok.style.display = 'none';
+}
+
+function setPublicError(id, message) {
+    const el = document.getElementById(id);
+    if (el) el.innerText = message;
+}
+
+async function handlePublicSubmit(e) {
+    e.preventDefault();
+    clearPublicErrors();
+
+    const btn = document.getElementById('pubSubmitBtn');
+    const requestData = {
+        name: document.getElementById('pubName').value.trim(),
+        email: document.getElementById('pubEmail').value.trim(),
+        message: document.getElementById('pubMessage').value.trim()
+    };
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = 'Sending...';
+    }
+
+    try {
+        // No getAuthHeader() here: the submission is deliberately anonymous.
+        const response = await fetch('/contacts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        });
+
+        // Bean Validation failure: GlobalExceptionHandler returns a
+        // field-keyed map, so each message is shown against its field.
+        if (response.status === 400) {
+            const errors = await response.json();
+            if (errors.name) setPublicError('perr-name', errors.name);
+            if (errors.email) setPublicError('perr-email', errors.email);
+            if (errors.message) setPublicError('perr-message', errors.message);
+            return;
+        }
+
+        if (!response.ok) {
+            alert('Sorry, your enquiry could not be sent. Please try again later.');
+            return;
+        }
+
+        const created = await response.json();
+        const form = document.getElementById('publicForm');
+        if (form) form.reset();
+
+        const ref = document.getElementById('publicRefId');
+        if (ref) ref.innerText = (created && created.id != null) ? created.id : '';
+
+        const ok = document.getElementById('publicSuccess');
+        if (ok) ok.style.display = 'block';
+    } catch (err) {
+        console.error('Error submitting enquiry:', err);
+        alert('Network error while sending your enquiry. Please try again.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = 'Send Enquiry';
+        }
+    }
+}
+
+
+/* ==============================================================
+   TOOLBAR AND HEADER STATISTICS
+   ============================================================== */
+
+/**
+ * Changing the number of rows per page resets the view to the first
+ * page, because the page the administrator was on may not exist at
+ * the new size.
+ */
+function changePageSize() {
+    currentPage = 0;
+    loadContacts();
+}
+
+/**
+ * Refreshes the unresolved and total counters shown in the header.
+ * Counts come from the server rather than from the current page, so
+ * they describe the whole queue and not just the rows on screen.
+ */
+async function loadStats() {
+    const pendingEl = document.getElementById('pendingCount');
+    const totalEl = document.getElementById('totalCount');
+    if (!pendingEl && !totalEl) return;
+
+    try {
+        const response = await fetch('/contacts/stats', {
+            headers: {
+                ...getAuthHeader(),
+                'Accept': 'application/json'
+            }
+        });
+        if (!response.ok) return;
+
+        const stats = await response.json();
+        if (pendingEl) pendingEl.innerText = stats.pending != null ? stats.pending : '-';
+        if (totalEl) totalEl.innerText = stats.total != null ? stats.total : '-';
+
+        // Draw attention to the chip only when there is something to act on.
+        const chip = document.getElementById('pendingChip');
+        if (chip) chip.classList.toggle('stat-zero', !stats.pending);
+    } catch (err) {
+        console.error('Error loading statistics:', err);
+    }
 }

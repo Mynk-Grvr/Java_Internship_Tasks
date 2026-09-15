@@ -10,6 +10,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -58,6 +60,21 @@ public class ContactService {
         }
 
         return contactRepository.findAll(pageable);
+    }
+
+    /**
+     * Summary counts for the whole queue, not merely the page in view.
+     * Returned as a map so that a further state can be added without
+     * altering the response shape.
+     */
+    public Map<String, Long> getStatusCounts() {
+        Map<String, Long> counts = new LinkedHashMap<>();
+        long pending = contactRepository.countByStatus("PENDING");
+        long resolved = contactRepository.countByStatus("RESOLVED");
+        counts.put("pending", pending);
+        counts.put("resolved", resolved);
+        counts.put("total", contactRepository.count());
+        return counts;
     }
 
     /**

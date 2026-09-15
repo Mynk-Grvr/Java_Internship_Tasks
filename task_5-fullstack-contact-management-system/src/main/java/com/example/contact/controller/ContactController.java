@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 /**
  * REST Controller for Managing Contact Inquiries and Support Tickets.
  * Base Path: /contacts
@@ -46,6 +48,17 @@ public class ContactController {
             @RequestParam(required = false) String search) {
         Page<Contact> contactPage = contactService.getContacts(page, size, sort, search);
         return ResponseEntity.ok(contactPage);
+    }
+
+    /**
+     * GET /contacts/stats : Summary counts for the whole queue.
+     * Declared before the /{id} mapping below; Spring matches the literal
+     * path in preference to the path variable, so "stats" is never
+     * mistaken for an identifier.
+     */
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Long>> getStats() {
+        return ResponseEntity.ok(contactService.getStatusCounts());
     }
 
     /**

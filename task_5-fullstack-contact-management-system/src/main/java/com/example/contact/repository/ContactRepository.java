@@ -19,4 +19,10 @@ public interface ContactRepository extends JpaRepository<Contact, Long> {
     Page<Contact> findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(
             String nameQuery, String emailQuery, Pageable pageable
     );
+
+    /**
+     * Counts the records held in a given processing state. Derived by
+     * Spring Data from the method name; no implementation is required.
+     */
+    long countByStatus(String status);
 }

@@ -8,156 +8,221 @@
 </head>
 <body>
 
-    <!-- Admin Login Modal Overlay (Hidden by default to prevent refresh flash) -->
-    <div class="modal-overlay" id="loginModalOverlay" style="background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); display: none;">
-        <div class="modal" style="max-width: 420px; border-top: 4px solid var(--primary);">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <h1 style="font-size: 1.6rem; color: var(--primary); margin-bottom: 6px;">🔐 Admin Portal Login</h1>
-                <p style="font-size: 0.85rem; color: var(--text-secondary);">Secure Contact & Support Ticket Management</p>
+
+<!-- ============================================================
+     PUBLIC ENQUIRY PAGE
+     Shown to unauthenticated visitors. Submits to POST /contacts
+     with no Authorization header; that endpoint is permitted
+     anonymously by SecurityConfig.
+     ============================================================ -->
+<div class="container" id="publicContainer" style="display: none;">
+    <header>
+        <div>
+            <h1>✉️ Contact Us</h1>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                Send us an enquiry — no account required. We will respond to the address you provide.
+            </p>
+        </div>
+        <div class="auth-box">
+            <button class="btn btn-secondary" onclick="showLoginOverlay()">Administrator Sign In</button>
+        </div>
+    </header>
+
+    <div style="max-width: 640px; margin: 0 auto; background: #ffffff; padding: 28px;
+                    border-radius: 10px; border: 1px solid var(--border-color);">
+        <form id="publicForm" onsubmit="handlePublicSubmit(event)">
+            <div class="form-group">
+                <label for="pubName">Full Name *</label>
+                <input type="text" id="pubName" placeholder="e.g. Ramesh Kumar" required>
+                <span class="error-text" id="perr-name"></span>
             </div>
-            
-            <form id="loginForm" onsubmit="handleLoginSubmit(event)">
-                <div class="form-group">
-                    <label for="loginUsername">Username</label>
-                    <input type="text" id="loginUsername" placeholder="Enter username (admin)" required>
-                </div>
-                <div class="form-group">
-                    <label for="loginPassword">Password</label>
-                    <input type="password" id="loginPassword" placeholder="Enter password (admin123)" required>
-                </div>
-                <div id="loginErrorMessage" style="color: var(--danger); font-size: 0.85rem; margin-bottom: 14px; display: none; text-align: center; font-weight: 600;">
-                    ❌ Invalid Username or Password!
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 1rem;" id="loginSubmitBtn">
-                    Sign In to Dashboard
-                </button>
-            </form>
-            <div style="margin-top: 18px; text-align: center; font-size: 0.8rem; color: var(--text-secondary);">
-                Default Credentials: <strong>admin</strong> / <strong>admin123</strong>
+            <div class="form-group">
+                <label for="pubEmail">Email Address *</label>
+                <input type="email" id="pubEmail" placeholder="e.g. ramesh@example.com" required>
+                <span class="error-text" id="perr-email"></span>
             </div>
+            <div class="form-group">
+                <label for="pubMessage">Your Message *</label>
+                <textarea id="pubMessage" rows="5" placeholder="How can we help?" required></textarea>
+                <span class="error-text" id="perr-message"></span>
+            </div>
+            <button type="submit" class="btn btn-primary" id="pubSubmitBtn"
+                    style="width: 100%; padding: 12px; font-size: 1rem;">
+                Send Enquiry
+            </button>
+        </form>
+
+        <div id="publicSuccess" style="display: none; margin-top: 18px; padding: 14px;
+                 border-radius: 8px; background: #ecfdf5; border: 1px solid #6ee7b7;
+                 color: #065f46; font-weight: 600; text-align: center;">
+            ✅ Thank you — your enquiry has been received.
+            Your reference number is #<span id="publicRefId"></span>.
+        </div>
+    </div>
+</div>
+
+<!-- Admin Login Modal Overlay (Hidden by default to prevent refresh flash) -->
+<div class="modal-overlay" id="loginModalOverlay" style="background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); display: none;">
+    <div class="modal" style="max-width: 420px; border-top: 4px solid var(--primary);">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h1 style="font-size: 1.6rem; color: var(--primary); margin-bottom: 6px;">🔐 Admin Portal Login</h1>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">Secure Contact & Support Ticket Management</p>
+        </div>
+
+        <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+            <div class="form-group">
+                <label for="loginUsername">Username</label>
+                <input type="text" id="loginUsername" placeholder="Enter your username" required>
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">Password</label>
+                <input type="password" id="loginPassword" placeholder="Enter your password" required>
+            </div>
+            <div id="loginErrorMessage" style="color: var(--danger); font-size: 0.85rem; margin-bottom: 14px; display: none; text-align: center; font-weight: 600;">
+                ❌ Invalid Username or Password!
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 1rem;" id="loginSubmitBtn">
+                Sign In to Dashboard
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Main Dashboard Application Container -->
+<div class="container" id="dashboardContainer" style="display: none;">
+    <!-- Header & Admin User Panel -->
+    <header>
+        <div>
+            <h1>📞 Contact Management System</h1>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">Enterprise Inquiry & Support Ticket Dashboard</p>
+        </div>
+        <div class="auth-box">
+                <span class="stat-chip stat-pending" id="pendingChip" title="Enquiries awaiting a response">
+                    ⚠️ Unresolved: <strong id="pendingCount">–</strong>
+                </span>
+            <span class="stat-chip" id="totalChip" title="All enquiries on record">
+                    📋 Total: <strong id="totalCount">–</strong>
+                </span>
+            <span class="stat-chip">
+                    👤 <strong id="loggedInUserDisplay">admin</strong>
+                </span>
+            <button class="btn btn-danger" style="margin-left: 10px;" onclick="handleLogout()">Log Out</button>
+        </div>
+    </header>
+
+    <!-- Control Toolbar (Search, Filter, New Contact Button) -->
+    <div class="toolbar">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="🔍 Search contacts by Name or Email..." onkeyup="debounceSearch()">
+        </div>
+        <div>
+            <select id="sortSelect" onchange="loadContacts()" class="toolbar-select">
+                <option value="createdAt,desc">Sort: Newest First</option>
+                <option value="createdAt,asc">Sort: Oldest First</option>
+                <option value="name,asc">Sort: Name (A-Z)</option>
+                <option value="name,desc">Sort: Name (Z-A)</option>
+            </select>
+            <label for="sizeSelect" class="control-label">Rows per page</label>
+            <select id="sizeSelect" onchange="changePageSize()" class="toolbar-select">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+            </select>
+            <button class="btn btn-primary" style="margin-left: 8px;" onclick="openCreateModal()">+ Create New Entry</button>
         </div>
     </div>
 
-    <!-- Main Dashboard Application Container -->
-    <div class="container" id="dashboardContainer" style="display: none;">
-        <!-- Header & Admin User Panel -->
-        <header>
-            <div>
-                <h1>📞 Contact Management System</h1>
-                <p style="font-size: 0.85rem; color: var(--text-secondary);">Enterprise Inquiry & Support Ticket Dashboard</p>
-            </div>
-            <div class="auth-box">
-                <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary); background: #e2e8f0; padding: 6px 12px; border-radius: 20px;">
-                    👤 Logged in as: <strong id="loggedInUserDisplay">admin</strong>
-                </span>
-                <button class="btn btn-danger" style="margin-left: 10px;" onclick="handleLogout()">Log Out</button>
-            </div>
-        </header>
-
-        <!-- Control Toolbar (Search, Filter, New Contact Button) -->
-        <div class="toolbar">
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="🔍 Search contacts by Name or Email..." onkeyup="debounceSearch()">
-            </div>
-            <div>
-                <select id="sortSelect" onchange="loadContacts()" style="padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 0.875rem;">
-                    <option value="createdAt,desc">Sort: Newest First</option>
-                    <option value="createdAt,asc">Sort: Oldest First</option>
-                    <option value="name,asc">Sort: Name (A-Z)</option>
-                    <option value="name,desc">Sort: Name (Z-A)</option>
-                </select>
-                <button class="btn btn-primary" style="margin-left: 8px;" onclick="openCreateModal()">+ Create New Entry</button>
-            </div>
-        </div>
-
-        <!-- Contacts Table View -->
-        <div class="table-card">
+    <!-- Contacts Table View -->
+    <div class="table-card">
+        <div class="table-scroll">
             <table>
                 <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Message</th>
-                        <th>Status</th>
-                        <th>Date</th>
-                        <th>Actions</th>
-                    </tr>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Message</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
                 </thead>
                 <tbody id="contactsTableBody">
-                    <tr>
-                        <td colspan="7" style="text-align: center; color: var(--text-secondary);">Loading contacts...</td>
-                    </tr>
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-secondary);">Loading contacts...</td>
+                </tr>
                 </tbody>
             </table>
         </div>
-
-        <!-- Pagination Controls -->
-        <div class="pagination">
-            <div id="paginationInfo" style="font-size: 0.875rem; color: var(--text-secondary);">
-                Page 1 of 1 (0 total entries)
-            </div>
-            <div style="display: flex; gap: 8px; align-items: center;">
-                <button class="btn btn-secondary" id="prevBtn" onclick="changePage(-1)" disabled>← Previous</button>
-                <button class="btn btn-secondary" id="nextBtn" onclick="changePage(1)" disabled>Next →</button>
-            </div>
-        </div>
     </div>
 
-    <!-- Create / Edit Contact Modal -->
-    <div class="modal-overlay" id="contactModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h2 id="modalTitle">Create New Contact</h2>
-                <button onclick="closeModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer;">✕</button>
-            </div>
-            <form id="contactForm" onsubmit="handleFormSubmit(event)">
-                <input type="hidden" id="contactId">
-                <div class="form-group">
-                    <label for="contactName">Full Name *</label>
-                    <input type="text" id="contactName" required>
-                    <span class="error-text" id="err-name"></span>
-                </div>
-                <div class="form-group">
-                    <label for="contactEmail">Email Address *</label>
-                    <input type="email" id="contactEmail" required>
-                    <span class="error-text" id="err-email"></span>
-                </div>
-                <div class="form-group">
-                    <label for="contactMessage">Message / Support Ticket Details *</label>
-                    <textarea id="contactMessage" rows="4" required></textarea>
-                    <span class="error-text" id="err-message"></span>
-                </div>
-                <div class="form-group">
-                    <label for="contactStatus">Status</label>
-                    <select id="contactStatus">
-                        <option value="PENDING">PENDING</option>
-                        <option value="RESOLVED">RESOLVED</option>
-                    </select>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="saveBtn">Save Entry</button>
-                </div>
-            </form>
+    <!-- Pagination Controls -->
+    <div class="pagination">
+        <div id="paginationInfo" style="font-size: 0.875rem; color: var(--text-secondary);">
+            Page 1 of 1 (0 total entries)
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="btn btn-secondary" id="prevBtn" onclick="changePage(-1)" disabled>← Previous</button>
+            <button class="btn btn-secondary" id="nextBtn" onclick="changePage(1)" disabled>Next →</button>
         </div>
     </div>
+</div>
 
-    <!-- Delete Confirmation Modal -->
-    <div class="modal-overlay" id="deleteModal">
-        <div class="modal" style="max-width: 400px;">
-            <div class="modal-header">
-                <h2>Confirm Deletion</h2>
-                <button onclick="closeDeleteModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer;">✕</button>
+<!-- Create / Edit Contact Modal -->
+<div class="modal-overlay" id="contactModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 id="modalTitle">Create New Contact</h2>
+            <button onclick="closeModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer;">✕</button>
+        </div>
+        <form id="contactForm" onsubmit="handleFormSubmit(event)">
+            <input type="hidden" id="contactId">
+            <div class="form-group">
+                <label for="contactName">Full Name *</label>
+                <input type="text" id="contactName" required>
+                <span class="error-text" id="err-name"></span>
             </div>
-            <p style="margin-bottom: 20px;">Are you sure you want to delete this contact record? This action cannot be undone.</p>
+            <div class="form-group">
+                <label for="contactEmail">Email Address *</label>
+                <input type="email" id="contactEmail" required>
+                <span class="error-text" id="err-email"></span>
+            </div>
+            <div class="form-group">
+                <label for="contactMessage">Message / Support Ticket Details *</label>
+                <textarea id="contactMessage" rows="4" required></textarea>
+                <span class="error-text" id="err-message"></span>
+            </div>
+            <div class="form-group">
+                <label for="contactStatus">Status</label>
+                <select id="contactStatus">
+                    <option value="PENDING">PENDING</option>
+                    <option value="RESOLVED">RESOLVED</option>
+                </select>
+            </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="confirmDelete()">Yes, Delete</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="saveBtn">Save Entry</button>
             </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal" style="max-width: 400px;">
+        <div class="modal-header">
+            <h2>Confirm Deletion</h2>
+            <button onclick="closeDeleteModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer;">✕</button>
+        </div>
+        <p style="margin-bottom: 20px;">Are you sure you want to delete this contact record? This action cannot be undone.</p>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+            <button type="button" class="btn btn-danger" onclick="confirmDelete()">Yes, Delete</button>
         </div>
     </div>
+</div>
 
-    <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
